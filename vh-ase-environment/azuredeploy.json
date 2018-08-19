@@ -1,61 +1,67 @@
 {
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
     "contentVersion": "1.0.0.0",
-    "parameters": {
-        "aseName": {
-            "type": "string",
-            "metadata": {
-                "description": "Name of the App Service Environment"
-            }
-        },
-        "aseLocation": { 
-            "type": "string",
-            "defaultValue": "South Central US",
-            "metadata": { 
-                "description": "Location of the App Service Environment" 
-            } 
-         },
-        "VirtualNetworkName": {
-            "type": "string",
-            "metadata": {
-              "description": "Name of the existing VNET"
-            }
-        },
-        "existingVirtualNetworkResourceGroup": {
-            "type": "string",
-            "metadata": {
-              "description": "Name of the existing VNET resource group"
-            }
-        },
-        "subnetName": {
-            "type": "string",
-            "metadata": {
-                "description": "Subnet name that will contain the App Service Environment"
-            }
-        },
-        "internalLoadBalancingMode": {
-            "type": "int",
-            "defaultValue": 3,
-            "allowedValues": [0,1,2,3],
-            "metadata": {
-                "description": "0 = public VIP only, 1 = only ports 80/443 are mapped to ILB VIP, 2 = only FTP ports are mapped to ILB VIP, 3 = both ports 80/443 and FTP ports are mapped to an ILB VIP."
-            }
-        },
-        "dnsSuffix": {
-            "type": "string",
-            "metadata": {
-                "description": "Used *only* when deploying an ILB enabled ASE.  Set this to the root domain associated with the ASE.  For example: contoso.com"
-            }
-        }
+  "parameters": {
+    "aseName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the App Service Environment"
+      }
     },
-    "variables":{
-        "vnetID": "[resourceId(parameters('existingVirtualNetworkResourceGroup'), 'Microsoft.Network/virtualNetworks', parameters('VirtualNetworkName'))]",
-      "ase-vnetPrefix": "10.0.0.0/16",
-      "ase-vnetSubnet1Name": "Subnet-1",
-      "ase-vnetSubnet1Prefix": "10.0.0.0/24",
-      "ase-vnetSubnet2Name": "Subnet-2",
-      "ase-vnetSubnet2Prefix": "10.0.1.0/24"
+    "aseLocation": {
+      "type": "string",
+      "defaultValue": "UK West",
+      "metadata": {
+        "description": "Location of the App Service Environment"
+      }
     },
+    "coreVirtualNetworkName": {
+      "type": "string",
+      "defaultValue": "jb-corevnet",
+      "metadata": {
+        "description": "Name of the core VNET for ASEs, MS SQL, Application Gateway"
+      }
+    },
+    "coreVirtualNetworkPrefix": {
+      "type": "string",
+      "defaultValue": "192.168.250.0/23"
+    },
+    "aseFrontendSubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet name that will contain the Frontend of App Service Environment"
+      }
+    },
+    "aseFrontendSubnetPrefix": {
+      "type": "string"
+    },
+    "aseBackendSubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet name that will contain the Backend of App Service Environment"
+      }
+    },
+    "aseBackendSubnetPrefix": {
+      "type": "string"
+    },
+    "internalLoadBalancingMode": {
+      "type": "int",
+      "defaultValue": 3,
+      "allowedValues": [ 0, 1, 2, 3 ],
+      "metadata": {
+        "description": "0 = public VIP only, 1 = only ports 80/443 are mapped to ILB VIP, 2 = only FTP ports are mapped to ILB VIP, 3 = both ports 80/443 and FTP ports are mapped to an ILB VIP."
+      }
+    },
+    "dnsSuffix": {
+      "type": "string",
+      "metadata": {
+        "description": "Used *only* when deploying an ILB enabled ASE.  Set this to the root domain associated with the ASE.  For example: contoso.com"
+      }
+    }
+  },
+  "variables": {
+    "vnetID": "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('coreVirtualNetworkName'))]"
+  },
     "resources": [
       {
         "apiVersion": "2015-08-01",
@@ -71,39 +77,39 @@
           "dnsSuffix": "[parameters('dnsSuffix')]",
           "virtualNetwork": {
             "Id": "[variables('vnetID')]",
-            "Subnet": "[parameters('subnetName')]"
+            "Subnet": "[parameters('aseFrontendSubnetName')]"
           }
         },
         "dependsOn": [
-          "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('VirtualNetworkName'))]"
+          "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('coreVirtualNetworkName'))]"
         ]
       },
       {
-        "name": "[parameters('VirtualNetworkName')]",
+        "name": "[parameters('coreVirtualNetworkName')]",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "[resourceGroup().location]",
         "apiVersion": "2016-03-30",
         "dependsOn": [],
         "tags": {
-          "displayName": "ase-vnet"
+          "displayName": "core-vnet"
         },
         "properties": {
           "addressSpace": {
             "addressPrefixes": [
-              "[variables('ase-vnetPrefix')]"
+              "[parameters('coreVirtualNetworkPrefix')]"
             ]
           },
           "subnets": [
             {
-              "name": "[variables('ase-vnetSubnet1Name')]",
+              "name": "[parameters('aseFrontendSubnetName')]",
               "properties": {
-                "addressPrefix": "[variables('ase-vnetSubnet1Prefix')]"
+                "addressPrefix": "[parameters('aseFrontendSubnetPrefix')]"
               }
             },
             {
-              "name": "[variables('ase-vnetSubnet2Name')]",
+              "name": "[parameters('aseBackendSubnetName')]",
               "properties": {
-                "addressPrefix": "[variables('ase-vnetSubnet2Prefix')]"
+                "addressPrefix": "[parameters('aseBackendSubnetPrefix')]"
               }
             }
           ]

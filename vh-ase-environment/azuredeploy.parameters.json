@@ -3,19 +3,25 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "aseName": {
-      "value": null
+      "value": "jb-ase"
     },
-    "existingVirtualNetworkName": {
-      "value": null
+    "corevirtualNetworkName": {
+      "value": "jb-corevnet"
     },
-    "existingVirtualNetworkResourceGroup": {
-      "value": null
+    "aseFrontendSubnetName": {
+      "value": "jb-ase-subnet-frontend"
     },
-    "subnetName": {
-      "value": null
+    "aseFrontendSubnetPrefix": {
+      "value": "192.168.250.0/27"
+    },
+    "aseBackendSubnetName": {
+      "value": "jb-ase-subnet-backend"
+    },
+    "aseBackendSubnetPrefix": {
+      "value": "192.168.250.32/27"
     },
     "dnsSuffix": {
-      "value": null
+      "value": "jbitops-internal.eu"
     }
   }
 }
