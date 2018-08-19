@@ -57,63 +57,104 @@
       "metadata": {
         "description": "Used *only* when deploying an ILB enabled ASE.  Set this to the root domain associated with the ASE.  For example: contoso.com"
       }
+    },
+    "sslCertificatePfxBlobString": {
+      "type": "string",
+      "metadata": {
+        "description": "A pfx file encoded as a base-64 string.  The pfx contains the SSL certificate that will be configured as the default SSL certificate for the ASE."
+      }
+    },
+    "sslCertificatePassword": {
+      "type": "string",
+      "metadata": {
+        "description": "The password for the pfx filed contained in pfxBlobString."
+      }
+    },
+    "sslCertificateThumbprint": {
+      "type": "string",
+      "metadata": {
+        "description": "The hexadecimal certificate thumbprint of the certificate contained in pfxBlobString.  All spaces need to be removed from the hex string."
+      }
+    },
+    "sslCertificateName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the certificate.  This can be any name you want to use to identify the certificate."
+      }
     }
   },
   "variables": {
     "vnetID": "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('coreVirtualNetworkName'))]"
   },
-    "resources": [
-      {
-        "apiVersion": "2015-08-01",
-        "type": "Microsoft.Web/hostingEnvironments",
+  "resources": [
+    {
+      "apiVersion": "2015-08-01",
+      "type": "Microsoft.Web/hostingEnvironments",
+      "name": "[parameters('aseName')]",
+      "kind": "ASEV2",
+      "location": "[parameters('aseLocation')]",
+      "properties": {
         "name": "[parameters('aseName')]",
-        "kind": "ASEV2",
         "location": "[parameters('aseLocation')]",
-        "properties": {
-          "name": "[parameters('aseName')]",
-          "location": "[parameters('aseLocation')]",
-          "ipSslAddressCount": 0,
-          "internalLoadBalancingMode": "[parameters('internalLoadBalancingMode')]",
-          "dnsSuffix": "[parameters('dnsSuffix')]",
-          "virtualNetwork": {
-            "Id": "[variables('vnetID')]",
-            "Subnet": "[parameters('aseFrontendSubnetName')]"
-          }
-        },
-        "dependsOn": [
-          "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('coreVirtualNetworkName'))]"
-        ]
-      },
-      {
-        "name": "[parameters('coreVirtualNetworkName')]",
-        "type": "Microsoft.Network/virtualNetworks",
-        "location": "[resourceGroup().location]",
-        "apiVersion": "2016-03-30",
-        "dependsOn": [],
-        "tags": {
-          "displayName": "core-vnet"
-        },
-        "properties": {
-          "addressSpace": {
-            "addressPrefixes": [
-              "[parameters('coreVirtualNetworkPrefix')]"
-            ]
-          },
-          "subnets": [
-            {
-              "name": "[parameters('aseFrontendSubnetName')]",
-              "properties": {
-                "addressPrefix": "[parameters('aseFrontendSubnetPrefix')]"
-              }
-            },
-            {
-              "name": "[parameters('aseBackendSubnetName')]",
-              "properties": {
-                "addressPrefix": "[parameters('aseBackendSubnetPrefix')]"
-              }
-            }
-          ]
+        "ipSslAddressCount": 0,
+        "internalLoadBalancingMode": "[parameters('internalLoadBalancingMode')]",
+        "dnsSuffix": "[parameters('dnsSuffix')]",
+        "virtualNetwork": {
+          "Id": "[variables('vnetID')]",
+          "Subnet": "[parameters('aseFrontendSubnetName')]"
         }
+      },
+      "dependsOn": [
+        "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('coreVirtualNetworkName'))]"
+      ]
+    },
+    {
+      "apiVersion": "2015-08-01",
+      "type": "Microsoft.Web/certificates",
+      "name": "[parameters('sslCertificateName')]",
+      "location": "[parameters('aseLocation')]",
+      "properties": {
+        "pfxBlob": "[parameters('sslCertificatePfxBlobString')]",
+        "password": "[parameters('sslCertificatePassword')]",
+        "hostingEnvironmentProfile": {
+          "id": "[resourceId('Microsoft.Web/hostingEnvironments',parameters('aseName'))]"
+        }
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Web/hostingEnvironments/',parameters('aseName'))]"
+
+      ]
+    },
+    {
+      "name": "[parameters('coreVirtualNetworkName')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "core-vnet"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('coreVirtualNetworkPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[parameters('aseFrontendSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('aseFrontendSubnetPrefix')]"
+            }
+          },
+          {
+            "name": "[parameters('aseBackendSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('aseBackendSubnetPrefix')]"
+            }
+          }
+        ]
       }
-    ]
+    }
+  ]
 }
